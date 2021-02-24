@@ -1,29 +1,37 @@
 \documentclass[sigplan,screen]{acmart}
+%% NOTE that a single column version is required for 
+%% submission and peer review. This can be done by changing
+%% the \doucmentclass[...]{acmart} in this template to 
+%% \documentclass[manuscript,screen,review]{acmart}
+%% 
+%% To ensure 100% compatibility, please check the white list of
+%% approved LaTeX packages to be used with the Master Article Template at
+%% https://www.acm.org/publications/taps/whitelist-of-latex-packages 
+%% before creating your document. The white list page provides 
+%% information on how to submit additional LaTeX packages for 
+%% review and adoption.
+%% Fonts used in the template cannot be substituted; margin 
+%% adjustments are not allowed.
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
   \providecommand\BibTeX{{%
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
 \begin{document}
-\title{CS512 Proposal: ORCAS Migration: How can user document co-clicks be for downstream tasks}
+\title{CS512 Proposal: Leveraging document co-clicks to infer similarity}
 
-\author{Daniel Campos} \And \author{Shweta Garg} \And \author{Revanth Reddy
+
+\author{Daniel Campos} \author{Revanth Reddy}
+\author{Shweta Garg} 
+\email{dcampos3, revanth3, shwetag2 @illinois.edu}
 
 
 %%
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-  \textbf{Dynamic Network Alignmen}, Distant Supervision
-  
-  Distant supervision for relation
-extraction without labeled data 
-Clustype: Effective
-entity recognition and typing by relation phrase-based clusteringA clear and well-documented \LaTeX\ document is presented as an
-  article formatted for publication by ACM in a conference proceedings
-  or journal publication. Based on the ``acmart'' document class, this
-  article presents and explains many of the common variations, as well
-  as many of the formatting elements an author may use in the
-  preparation of the documentation of their work.
+In the last few decades search engines like Google, Bing, Baidu, and Yandex have become the primary way that people around the world interact with information. Their constant and diverse usage has made these engines idea sources of training data like document co-clicks. Using the ORCAS dataset we seek to explore the intersection of Data Mining and deep learning and answer the question: Can document co-clicks be used to learn similarity between concepts?
 \end{abstract}
 
 %%
@@ -57,20 +65,16 @@ entity recognition and typing by relation phrase-based clusteringA clear and wel
 %%
 %% Keywords. The author(s) should pick words that accurately describe
 %% the work being presented. Separate the keywords with commas.
-\keywords{datasets, neural networks, gaze detection, text tagging}
+\keywords{datasets, neural networks, information retrieval, data mining}
 
 %%
 %% This command processes the author and affiliation and title
 %% information and builds the first part of the formatted document.
 \maketitle
-
-\input{0abstract}
-\input{1introduction}
-\input{2method}
-\input{3experiments}
-\input{4related}
-\input{5conclusion}
-
+\input{1description}
+\input{2ideas.tex}
+\input{3plan}
+\input{4papers}
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bibliography}
 %\appendix

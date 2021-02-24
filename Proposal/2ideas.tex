@@ -1,0 +1,8 @@
+\section{Main Ideas}
+The main focus of our work is to explore what kind of value we can extract out of the ORCAS dataset with regards to generating distant supervision data. We believe that if our efforts our successful this method can be explored for low resource languages.
+\subsection{Dataset Mining}
+Our first idea is focus on the general exploration and processing of the ORCAS dataset and the application of traditional data mining algorithms to explore what signals we can extract. We seek to create a set of signals which we can use in our downstream experiments to prove or disprove our hypothesis. Some of the methods we plan to explore include: phrase based clustering, document based clustering, n-gram association analysis, etc.
+\subsection{query synonym prediction}
+Once we have produced various dataset we will explore how these datasets can be used for transfer learning. Using contextual and non contextual word representations we will explore how well each of these methods can represent n-gram and query similarity. Evaluation will focus on predicting the degree of connection between queries(measured by proximity in click graph) and between n-gram terms.
+\subsection{Query rewriting}
+Similar to synonym detection, we will explore the effect of using our processed dataset on information retrieval centric domain. Using the MSMARCO baseline (other baselines?) we will explore how the use of our processed data can be applied to improve existing and established ranking models like BM25.  
