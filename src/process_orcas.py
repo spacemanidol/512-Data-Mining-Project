@@ -52,14 +52,15 @@ def get_query_stats(qid2query):
     for qid in qid2query:
         query = qid2query[qid]
         query_char_length.append(len(query))
-        query_word_length.append(len(query.split(' ')))
+        query = query.split(' ')
+        query_word_length.append(len(query))
         if query_word_length[-1] == 1:
             one_word_query += 1
         for word in query:
             vocab[word] += 1
     print("There are {} unique queries with an average length of {} words and {} characters".format(len(qid2query), np.average(query_word_length), np.average(query_char_length)))
     print("The longest query is {} words long and there are {} queries with a single word".format(np.max(query_word_length), one_word_query))
-    print("There are {} unique words and the 15 most common are {}".format(len(vocab), vocab.most_common(15)))
+    print("There are {} unique words and the 30 most common are {}".format(len(vocab), vocab.most_common(30)))
 
 
 def main(args):
@@ -74,14 +75,19 @@ def main(args):
     
 
 
+def apply_data_constrains(args, qid2query, doc2query):
+    return
 
-
+def create_query_based_dataset(qid2uery):
+    return
+ 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Turn Orcas into clickgraph')
     parser.add_argument('--stats', action='store_true', help='Run to calculate dataset stats')   
     parser.add_argument('--qrel_file', default='data/orcas-doctrain-qrels.tsv', type=str, help='Location of QREL file to make graph from')
     parser.add_argument('--queries_dir', default='data', type=str, help='Directory where queries files are located')
-    parser.add_argument('--min_query_lenght', default=2, type=int, help='Minimum query length')
+    parser.add_argument('--min_query_length', default=2, type=int, help='Minimum query length')
+    parser.add_argument('--max_query_length', default=20, type=int, help='Maximum queyr legth for dataset processing')
     parser.add_argument('--min_support', default=5, type=int, help='Minimum number of connecting documents to mean q1 and q2 have a edge')
     args = parser.parse_args()
     main(args)
