@@ -5,11 +5,12 @@ import numpy as np
 from collections import Counter
 import networkx as nx
 import itertools
+from tqdm import tqdm
 
 def load_qrels(filename):
     qid2click, doc2query = {}, {} # query to the documents that are clicks on it
     with open(filename) as f:
-        for l in f:
+        for i, l in enumerate(tqdm(f)):
             l = l.strip().split(' ')
             document = l[2]
             query = l[0]
@@ -39,7 +40,7 @@ def load_queries(data_dir):
     query_files = ['queries.train.tsv', 'queries.eval.tsv', 'queries.dev.tsv', 'orcas-doctrain-queries.tsv']
     for q_file in query_files:
         with open(os.path.join(data_dir, q_file), 'r') as f:
-            for l in f:
+            for i, l in enumerate(tqdm(f)):
                 l = l.strip().split('\t')
                 if len(l) > 1:
                     qid = l[0]
@@ -77,17 +78,20 @@ def filter_queries(args, qid2query, doc2query):
 def document_based_clustering(args, qid2query, doc2query):
     qids = list(qid2query.keys())
     dataset = []
-    for doc in doc2query:
+    for i, doc in tqdm(enumerate(doc2query)):
         if len(doc2query[doc ]) > 1: # only look for documents that have > 1 query co clicks
             combinations = get_combinations(doc2query[doc], qid2query)
             source_samples = []# a list of current sampled sources
             for sample in combinations:
-                source_samples.append("{}\t{}\t1\n".format(sample[0],sample[1]))
-                random_negative = random.choice(qids) #negative random sampling
-                if np.random.randint(2) == 0:
-                    source_samples.append("{}\t{}\t0\n".format(sample[0], random_negative)) # negative sample
-                else:
-                    source_samples.append("{}\t{}\t0\n".format(sample[1], random_negative)) # negative sample
+                try:
+                    source_samples.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
+                    random_negative = qid2query[random.choice(qids)] #negative random sampling
+                    if np.random.randint(2) == 0:
+                        source_samples.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
+                    else:
+                        source_samples.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
+                except:
+                    pass
             random.shuffle(source_samples)
             dataset += source_samples[:args.per_source_samples]
     random.shuffle(dataset)
@@ -141,18 +145,63 @@ def make_query_graph(args, qid2query, doc2query, qid2click):
                     g.add_edge(pair[1], pair[0])
     print("Graph Construction Done. There are {} nodes and {} edges".format(g.number_of_nodes(),g.number_of_edges()))
     return g
-    
-def get_document_graph_neighbors(args, g):
+
+def get_document_query_neighbors(args, g, qid2query):
     pairs = []
     potential_nodes = list(g.nodes)
-    while len(pairs) < args.dataset.size():
+    while len(pairs) < args.dataset.size:
         source = random.choice(potential_nodes)
         edge_to_sample_from = get_edges(source, g, args.graph_sample_depth)
         random.shuffle(edges_to_sample)
         edges_for_data_sampling = edge_to_sample[:args.per_source_sample_size]
-        # select a node
-        # get edges
-        #
+        qids = []
+        for edge in edges_for_data_sampling:
+            qids += edge[1]
+        qids = list(set(qids))
+        qids = get_combinations(qids, qid2query)
+        random.shuffle(qids)
+        for i in range(args.per_source_sample_size):
+            sample = qids[i]
+            try:
+                pairs.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
+                random_negative = qid2query[random.choice(qids)] #negative random sampling
+                if np.random.randint(2) == 0:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
+                else:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
+            except:
+                pass
+    random.shuffle(pair)
+    return pairs[:args.dataset_size]
+
+def get_document_graph_neighbors(args, g, qid2query, doc2query):
+    pairs = []
+    potential_nodes = list(g.nodes)
+    while len(pairs) < args.dataset.size:
+        source = random.choice(potential_nodes)
+        edge_to_sample_from = get_edges(source, g, args.graph_sample_depth)
+        random.shuffle(edges_to_sample)
+        edges_for_data_sampling = edge_to_sample[:args.per_source_sample_size]
+        qids = []
+        for edge in edges_for_data_sampling:
+            qids += doc2query[edge[1]]
+        qids = list(set(qids))
+        qids = get_combinations(qids, qid2query)
+        random.shuffle(qids)
+        for i in range(args.per_source_sample_size):
+            sample = qids[i]
+            try:
+                pairs.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
+                random_negative = qid2query[random.choice(qids)] #negative random sampling
+                if np.random.randint(2) == 0:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
+                else:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
+            except:
+                pass
+    random.shuffle(pair)
+    return pairs[:args.dataset_size]
+        
 def write_dataset(args, dataset):
     with open(args.output_name, 'w') as w:
         for item in dataset:
@@ -161,7 +210,7 @@ def write_dataset(args, dataset):
 def main(args): 
     print("Loading Queries")
     qid2query = load_queries(args.queries_dir)
-    print("Loading Orcas")
+    print("Loading Orcas Qrels")
     qid2click, doc2query = load_qrels(args.qrel_file)
     if args.stats:
         print("Printing data statistics")
@@ -171,14 +220,19 @@ def main(args):
     filtered_qid2query= filter_queries(args, qid2query, doc2query)
     if args.doc_clustering:
         print("Creating data via document click clusters")
-        dataset = document_based_clustering(args, qid2query, doc2query)
+        dataset = document_based_clustering(args, filtered_qid2query, doc2query)
+        write_dataset(args, dataset)
     if args.do_query_graph:
         print("Creating query graph")
-        qg = make_query_graph(args, qid2query, doc2query, qid2click)
+        qg = make_query_graph(args, filtered_qid2query, doc2query, qid2click)
+        dataset = get_document_graph_neighbors(args, g, qid2query, doc2query)
+        write_dataset(args, dataset)
         print("Creating data based on graph")
     if args.do_document_graph:
         print("Creating document graph")
-        dg = make_doc_graph(args, qid2query, doc2query, qid2click)
+        dg = make_doc_graph(args, filtered_qid2query, doc2query, qid2click)
+        dataset = get_query_graph_neighbors(args, g, qid2query, doc2query)
+        write_dataset(args, dataset)
         print("Creating data based on document graph")
  
 if __name__ == '__main__':
@@ -192,10 +246,10 @@ if __name__ == '__main__':
     parser.add_argument('--do_document_graph', action='store_true', help='Run dataset creation via document graph')
     parser.add_argument('--edge_hops', default=2, type=int, help='Edge hops for dataset creation')   
     parser.add_argument('--qrel_file', default='data/orcas-doctrain-qrels.tsv', type=str, help='Location of QREL file to make graph from')
-    parser.add_argument('--queries_dir', default='data', type=str, help='Directory where queries files are located')
-    parser.add_argument('--min_query_length', default=2, type=int, help='Minimum query length')
+    parser.add_argument('--queries_dir', default='data/', type=str, help='Directory where queries files are located')
+    parser.add_argument('--min_query_length', default=5, type=int, help='Minimum query length')
     parser.add_argument('--max_query_length', default=20, type=int, help='Maximum queyr legth for dataset processing')
     parser.add_argument('--edge_skip', default=2, type=int, help='How far away in co clicks do queries need to be for similarity')
-    parser.add_argument('--doc_cluster_output', default='data/doc_cluster_labels.tsv', type=str, help='File where outputed data from clustering')
+    parser.add_argument('--output_name', default='data/doc_cluster_labels.tsv', type=str, help='File where outputed data from clustering')
     args = parser.parse_args()
     main(args)
