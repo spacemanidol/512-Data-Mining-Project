@@ -101,7 +101,6 @@ def get_combinations(qids, qid2query):
                 combinations.append((qid, second_qid))
     return combinations
 
-get_combinations(qid, qid2query)
 def get_edges(source, g, depth):
     edges, related_nodes = [],[]
     for edge in g.edges(source):
@@ -154,7 +153,11 @@ def get_document_graph_neighbors(args, g):
         # select a node
         # get edges
         #
-
+def write_dataset(args, dataset):
+    with open(args.output_name, 'w') as w:
+        for item in dataset:
+            w.write(item)
+        
 def main(args): 
     print("Loading Queries")
     qid2query = load_queries(args.queries_dir)
@@ -168,7 +171,7 @@ def main(args):
     filtered_qid2query= filter_queries(args, qid2query, doc2query)
     if args.doc_clustering:
         print("Creating data via document click clusters")
-        document_based_clustering(args, qid2query, doc2query)
+        dataset = document_based_clustering(args, qid2query, doc2query)
     if args.do_query_graph:
         print("Creating query graph")
         qg = make_query_graph(args, qid2query, doc2query, qid2click)
