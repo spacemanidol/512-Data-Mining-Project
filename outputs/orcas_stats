@@ -1,0 +1,9 @@
+Loading Queries
+Loading Orcas
+Printing data statistics
+There are 10405342 queries and 1422029 documents.
+The average query has 1.8090065660503998 documents, the median is 1.0 and the max is 2116, and the min is 1
+The average document has 13.236953676753428 queries, the median has 4.0, the max is 11308 and the min is 1
+There are 11416257 unique queries with an average length of 3.5442302148593887 words and 21.983400338657408 characters
+The longest query is 373 words long and there are 1154730 queries with a single word
+There are 1445641 unique words and the 30 most common are [('of', 732631), ('what', 732286), ('is', 694242), ('to', 628082), ('in', 610784), ('how', 571662), ('the', 566001), ('for', 441354), ('a', 427787), ('and', 230068), ('does', 195667), ('on', 154930), ('do', 153456), ('definition', 140330), ('online', 118702), ('are', 115162), ('free', 108116), ('county', 104574), ('best', 102424), ('my', 97841), ('login', 93948), ('meaning', 93303), ('number', 92828), ('you', 91316), ('weather', 88733), ('where', 84139), ('when', 84007), ('2019', 82153), ('10', 81622), ('windows', 79162)]

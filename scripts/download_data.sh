@@ -7,3 +7,4 @@ wget -c https://msmarco.blob.core.windows.net/msmarcoranking/orcas-doctrain-qrel
 wget -c https://msmarco.blob.core.windows.net/msmarcoranking/orcas-doctrain-queries.tsv.gz
 wget -c https://msmarco.blob.core.windows.net/msmarcoranking/top1000.dev.tar.gz
 wget -c https://msmarco.blob.core.windows.net/msmarcoranking/top1000.eval.tar.gz
+wget -c http://qim.fs.quoracdn.net/quora_duplicate_questions.tsv
