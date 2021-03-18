@@ -77,22 +77,43 @@ def filter_queries(args, qid2query, doc2query):
 def document_based_clustering(args, qid2query, doc2query):
     qids = list(qid2query.keys())
     dataset = []
-    with open(args.doc_cluster_output,'w') as w:
-        for doc in doc2query:
-            if len(doc2query) > 1: # only look for documents that have > 1 query co clicks
-                combinations = get_combinations(doc2query[doc], qid2query)
-                source_samples = []# a list of current sampled sources
-                for sample in combinations:
-                    source_samples.append("{}\t{}\t1\n".format(sample[0],sample[1]))
-                    random_negative = random.choice(qid2query[qids]) #negative random sampling
-                    if np.random.randint(2) == 0:
-                        source_samples.append("{}\t{}\t0\n".format(sample[0], random_negative)) # negative sample
-                    else:
-                        source_samples.append("{}\t{}\t0\n".format(sample[1], random_negative)) # negative sample
-                random.shuffle(source_samples)
-                dataset += source_samples[:args.per_source_samples]
+    for doc in doc2query:
+        if len(doc2query[doc ]) > 1: # only look for documents that have > 1 query co clicks
+            combinations = get_combinations(doc2query[doc], qid2query)
+            source_samples = []# a list of current sampled sources
+            for sample in combinations:
+                source_samples.append("{}\t{}\t1\n".format(sample[0],sample[1]))
+                random_negative = random.choice(qids) #negative random sampling
+                if np.random.randint(2) == 0:
+                    source_samples.append("{}\t{}\t0\n".format(sample[0], random_negative)) # negative sample
+                else:
+                    source_samples.append("{}\t{}\t0\n".format(sample[1], random_negative)) # negative sample
+            random.shuffle(source_samples)
+            dataset += source_samples[:args.per_source_samples]
     random.shuffle(dataset)
     return dataset[:args.dataset_size]
+
+def get_combinations(qids, qid2query):
+    combinations = []
+    for qid in qids:
+        for second_qid in qids:
+            if qid != second_qid and qid in qid2query and second_qid in qid2query:
+                combinations.append((qid, second_qid))
+    return combinations
+
+get_combinations(qid, qid2query)
+def get_edges(source, g, depth):
+    edges, related_nodes = [],[]
+    for edge in g.edges(source):
+        edges.append(edge)
+        related_nodes.append(edge[1])
+    if depth < 2:
+        return edges
+    else:
+        depth -= 1
+        for neighbor in related_nodes:
+            edges += get_edges(neighbor, g, depth)
+    return edges
 
 def make_doc_graph(args, qid2query, doc2query, qid2click):
     g = nx.Graph()
@@ -121,27 +142,6 @@ def make_query_graph(args, qid2query, doc2query, qid2click):
                     g.add_edge(pair[1], pair[0])
     print("Graph Construction Done. There are {} nodes and {} edges".format(g.number_of_nodes(),g.number_of_edges()))
     return g
-
-def get_combinations(qids, qid2query):
-    combinations = []
-    for qid in qids:
-        for second_qid in qids:
-            if qid != second_qid and qid in qid2query and second_qid in qid2query:
-                combinations.append((qid2query[qid], qid2query[second_qid]))
-    return combinations
-
-def get_edges(source, g, depth):
-    edges, related_nodes = [],[]
-    for edge in g.edges(source):
-        edges.append(edge)
-        related_nodes.append(edge[1])
-    if depth < 2:
-        return edges
-    else:
-        depth -= 1
-        for neighbor in related_nodes:
-            edges += get_edges(neighbor, g, depth)
-    return edges
     
 def get_document_graph_neighbors(args, g):
     pairs = []
@@ -165,8 +165,8 @@ def main(args):
         get_click_stats(qid2click, doc2query)
         get_query_stats(qid2query)         
     print("Filtering data to min/max constraints")
-    filtered_qid2query= filter_queries((args, qid2query, doc2query)
-    if args.doc_clusering:
+    filtered_qid2query= filter_queries(args, qid2query, doc2query)
+    if args.doc_clustering:
         print("Creating data via document click clusters")
         document_based_clustering(args, qid2query, doc2query)
     if args.do_query_graph:
