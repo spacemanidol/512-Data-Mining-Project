@@ -93,7 +93,7 @@ def document_based_clustering(args, qid2query, doc2query):
                 except:
                     pass
             random.shuffle(source_samples)
-            dataset += source_samples[:args.per_source_samples]
+            dataset += source_samples[:args.per_source_sample_size]
     random.shuffle(dataset)
     return dataset[:args.dataset_size]
 
@@ -146,41 +146,14 @@ def make_query_graph(args, qid2query, doc2query, qid2click):
     print("Graph Construction Done. There are {} nodes and {} edges".format(g.number_of_nodes(),g.number_of_edges()))
     return g
 
-def get_document_query_neighbors(args, g, qid2query):
-    pairs = []
-    potential_nodes = list(g.nodes)
-    while len(pairs) < args.dataset.size:
-        source = random.choice(potential_nodes)
-        edge_to_sample_from = get_edges(source, g, args.graph_sample_depth)
-        random.shuffle(edges_to_sample)
-        edges_for_data_sampling = edge_to_sample[:args.per_source_sample_size]
-        qids = []
-        for edge in edges_for_data_sampling:
-            qids += edge[1]
-        qids = list(set(qids))
-        qids = get_combinations(qids, qid2query)
-        random.shuffle(qids)
-        for i in range(args.per_source_sample_size):
-            sample = qids[i]
-            try:
-                pairs.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
-                random_negative = qid2query[random.choice(qids)] #negative random sampling
-                if np.random.randint(2) == 0:
-                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
-                else:
-                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
-            except:
-                pass
-    random.shuffle(pair)
-    return pairs[:args.dataset_size]
-
 def get_document_graph_neighbors(args, g, qid2query, doc2query):
     pairs = []
     potential_nodes = list(g.nodes)
-    while len(pairs) < args.dataset.size:
+    potential_queries = list(qid2query.keys())
+    while len(pairs) < args.dataset_size:
         source = random.choice(potential_nodes)
-        edge_to_sample_from = get_edges(source, g, args.graph_sample_depth)
-        random.shuffle(edges_to_sample)
+        edge_to_sample = get_edges(source, g, args.graph_sample_depth)
+        random.shuffle(edge_to_sample)
         edges_for_data_sampling = edge_to_sample[:args.per_source_sample_size]
         qids = []
         for edge in edges_for_data_sampling:
@@ -189,17 +162,50 @@ def get_document_graph_neighbors(args, g, qid2query, doc2query):
         qids = get_combinations(qids, qid2query)
         random.shuffle(qids)
         for i in range(args.per_source_sample_size):
+            if i >= len(qids):
+                break
             sample = qids[i]
             try:
                 pairs.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
-                random_negative = qid2query[random.choice(qids)] #negative random sampling
+                random_negative = qid2query[random.choice(potential_queries)] #negative random sampling
                 if np.random.randint(2) == 0:
                     pairs.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
                 else:
                     pairs.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
             except:
                 pass
-    random.shuffle(pair)
+    random.shuffle(pairs)
+    return pairs[:args.dataset_size]
+
+def get_query_graph_neighbors(args, g, qid2query, doc2query):
+    pairs = []
+    potential_nodes = list(g.nodes)
+    potential_queries = list(qid2query.keys())
+    while len(pairs) < args.dataset_size:
+        source = random.choice(potential_nodes)
+        edge_to_sample = get_edges(source, g, args.graph_sample_depth)
+        random.shuffle(edge_to_sample)
+        edges_for_data_sampling = edge_to_sample[:args.per_source_sample_size]
+        qids = []
+        for edge in edges_for_data_sampling:
+            qids += edge[1]
+        qids = list(set(qids))
+        qids = get_combinations(qids, qid2query)
+        random.shuffle(qids)
+        for i in range(args.per_source_sample_size):
+            if i >= len(qids):
+                break
+            sample = qids[i]
+            try:
+                pairs.append("{}\t{}\t1\n".format(qid2query[sample[0]],qid2query[sample[1]]))
+                random_negative = qid2query[random.choice(potential_queries)] #negative random sampling
+                if np.random.randint(2) == 0:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[0]], random_negative)) # negative sample
+                else:
+                    pairs.append("{}\t{}\t0\n".format(qid2query[sample[1]], random_negative)) # negative sample
+            except:
+                pass
+    random.shuffle(pairs)
     return pairs[:args.dataset_size]
         
 def write_dataset(args, dataset):
@@ -225,13 +231,13 @@ def main(args):
     if args.do_query_graph:
         print("Creating query graph")
         qg = make_query_graph(args, filtered_qid2query, doc2query, qid2click)
-        dataset = get_document_graph_neighbors(args, g, qid2query, doc2query)
+        dataset = get_query_graph_neighbors(args, qg, qid2query, doc2query)
         write_dataset(args, dataset)
         print("Creating data based on graph")
     if args.do_document_graph:
         print("Creating document graph")
         dg = make_doc_graph(args, filtered_qid2query, doc2query, qid2click)
-        dataset = get_query_graph_neighbors(args, g, qid2query, doc2query)
+        dataset = get_document_graph_neighbors(args, dg, qid2query, doc2query)
         write_dataset(args, dataset)
         print("Creating data based on document graph")
  
@@ -240,7 +246,7 @@ if __name__ == '__main__':
     parser.add_argument('--stats', action='store_true', help='Run to calculate dataset stats')
     parser.add_argument('--graph_sample_depth', type=int, default = 1, help='how far away to consider neighbors when edge similarity_clustering')
     parser.add_argument('--dataset_size', type=int, default=1000000, help='How big should the target dataset be')
-    parser.add_argument('--per_source_samples', type=int, default=10, help='How many data samples will we max take. Avoids overpresenting highly connected nodes')
+    parser.add_argument('--per_source_sample_size', type=int, default=10, help='How many data samples will we max take. Avoids overpresenting highly connected nodes')
     parser.add_argument('--doc_clustering', action='store_true', help='Run dataset creation via document clusetring(queries that share a document click are considered similair')
     parser.add_argument('--do_query_graph', action='store_true', help='Run dataset creation via query graph')
     parser.add_argument('--do_document_graph', action='store_true', help='Run dataset creation via document graph')
